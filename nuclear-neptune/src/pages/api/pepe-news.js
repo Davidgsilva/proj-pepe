@@ -139,104 +139,23 @@ export async function GET() {
           });
         }
       }
-      
-      // Manually add the headlines from the user's example if we still don't have any
-      if (googleNews.length === 0) {
-        googleNews = [
-          {
-            headline: "Pepe Coin Price Prediction: Bullish Setup Targets $0.000015",
-            description: "Pepe Coin (PEPE), the second-largest meme coin on the Ethereum blockchain, is drawing renewed attention from traders and analysts.",
-            source: "BanklessTimes • 8 hours ago",
-            url: "#",
-            type: "Google News"
-          },
-          {
-            headline: "PEPE Price Prediction: Sudden Volume Surge Could Trigger Parabolic Run to $1",
-            description: "The meme coin frenzy is heating up again as PEPE sparks fresh excitement following months of consolidation.",
-            source: "Coinspeaker • 1 day ago",
-            url: "#",
-            type: "Google News"
-          },
-          {
-            headline: "Shiba Inu and Pepe Fall Further Out Of Favor As Smart Money Is Backing This Potential 100x Coin",
-            description: "While Shiba Inu coin attempts to add substance and Pepe Coin relies on renewed hype, 'smart money' typically favors predictable growth.",
-            source: "CoinCentral • 12 hours ago",
-            url: "#",
-            type: "Google News"
-          },
-          {
-            headline: "Pepe Price Prediction: What Warren Buffett's Retirement Means for $PEPE's Future",
-            description: "Pepe coin's drop mirrors market anxiety as investors react to Buffett's warnings on the deficit, tariffs, and global tensions.",
-            source: "The Cryptonomist • 2 days ago",
-            url: "#",
-            type: "Google News"
-          },
-          {
-            headline: "Pepe Price Prediction and Market Outlook: More Upside or Correction Ahead?",
-            description: "Pepe Coin has returned to the spotlight, driven by rapid price fluctuations and increasing interest on social platforms.",
-            source: "The Tribune • 4 days ago",
-            url: "#",
-            type: "Google News"
-          }
-        ];
-      }
-      
       console.log(`[DEBUG] Parsed Google news: ${googleNews.length} items found`);
     } catch (error) {
       console.error("[ERROR] Failed to scrape Google News:", error);
     }
-    
-    // 3. Create API data news items
-    const apiNews = [
-      { 
-        headline: `PEPE Coin Trading at $${pepeData.price} with Market Cap of $${(parseFloat(pepeData.marketCap)/1000000).toFixed(2)}M`, 
-        url: "https://pepecoinexplorer.com",
-        source: "Pepecoin API"
-      },
-      { 
-        headline: `PEPE Coin Supply Reaches ${(parseFloat(pepeData.supply)/1000000000).toFixed(2)}B Tokens`, 
-        url: "https://pepecoinexplorer.com/api/v1/coinsupply",
-        source: "Pepecoin API"
-      },
-      { 
-        headline: `PEPE Blockchain Reaches ${pepeData.blockCount} Blocks`, 
-        url: "https://pepecoinexplorer.com/api/v1/blockcount",
-        source: "Pepecoin API"
-      }
-    ];
-    
-    // 4. Combine news from both sources or use fallback data if needed
-    let news = [...apiNews];
-    
-    if (googleNews.length > 0) {
-      // Add Google News results
-      news = [...news, ...googleNews];
-    } else {
-      // Add fallback news if Google News scraping failed
-      console.log("[DEBUG] Using fallback news data");
-      news.push(
-        { 
-          headline: "PEPE Community Growing as Meme Coins Gain Popularity", 
-          url: "https://pepecoinexplorer.com",
-          source: "Fallback Data"
-        },
-        { 
-          headline: "Analysts Tracking PEPE's Performance in the Crypto Market", 
-          url: "https://pepecoinexplorer.com",
-          source: "Fallback Data"
-        }
-      );
-    }
 
-    // 5. Prepare text for LLM summarization
+    // 5. Prepare text for LLM summarization and sentiment analysis
     let prompt = `Here's the latest data about Pepe coin (crypto):\n\nPrice: $${pepeData.price}\nMarket Cap: $${pepeData.marketCap}\nCoin Supply: ${pepeData.supply}\nBlock Count: ${pepeData.blockCount}\n\nRecent headlines and news:\n`;
-    news.forEach((n, i) => { 
+    googleNews.forEach((n, i) => { 
       prompt += `${i+1}. ${n.headline}\n`;
       if (n.description) prompt += `   ${n.description}\n`;
       if (n.source) prompt += `   Source: ${n.source}\n`;
       prompt += `\n`;
     });
-    prompt += "\nSummarize these news headlines for a regular user. Give a friendly summary and list the news as clickable links.";
+    prompt += "\nBased on this information, please provide:\n1. A friendly summary of the news for a regular user\n2. A clear buy, sell, or hold recommendation for PEPE coin based on the news sentiment\n3. A brief explanation for your recommendation\n4. List the news as clickable links\n\nFormat your response with clear sections for the summary, recommendation, and news links.";
+    console.log("[DEBUG] Prompt for OpenAI:\n", prompt);
+
+    console.log("[DEBUG] Starting OpenAI summarization");
     console.log("[DEBUG] Prompt for OpenAI:\n", prompt);
 
     // 6. Summarize with OpenAI (gpt-4o-mini)
@@ -248,8 +167,62 @@ export async function GET() {
     console.log("[DEBUG] OpenAI response:", response);
     const summary = response.output_text || "No summary available.";
 
+    console.log("[DEBUG] Summary:", summary);
+
+    // Extract recommendation from summary
+    let recommendation = "HOLD";
+    let recommendationReason = "";
+    
+    // Try to extract recommendation from the summary
+    if (summary.toLowerCase().includes("buy") && 
+        (summary.toLowerCase().includes("recommend") || 
+         summary.toLowerCase().includes("recommendation") || 
+         summary.toLowerCase().includes("bullish"))) {
+      recommendation = "BUY";
+    } else if (summary.toLowerCase().includes("sell") && 
+              (summary.toLowerCase().includes("recommend") || 
+               summary.toLowerCase().includes("recommendation") || 
+               summary.toLowerCase().includes("bearish"))) {
+      recommendation = "SELL";
+    }
+    
+    // Try to extract the reason
+    const reasonPatterns = [
+      /recommendation:([^\n]+)/i,
+      /recommend([^\n.]+)/i,
+      /because([^\n.]+)/i,
+      /due to([^\n.]+)/i
+    ];
+    
+    for (const pattern of reasonPatterns) {
+      const match = summary.match(pattern);
+      if (match && match[1]) {
+        recommendationReason = match[1].trim();
+        break;
+      }
+    }
+    
+    // If no reason was found, provide a generic one
+    if (!recommendationReason) {
+      if (recommendation === "BUY") {
+        recommendationReason = "Positive sentiment in recent news";
+      } else if (recommendation === "SELL") {
+        recommendationReason = "Negative sentiment in recent news";
+      } else {
+        recommendationReason = "Mixed or neutral sentiment in recent news";
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ pepeData, news, summary }),
+      JSON.stringify({ 
+        pepeData, 
+        googleNews, 
+        summary,
+        tradingAdvice: {
+          recommendation,
+          reason: recommendationReason
+        }
+      }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
