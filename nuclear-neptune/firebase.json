@@ -1,10 +1,19 @@
 {
-    "hosting": {
-      "source": ".",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ]
-    }
+  "hosting": {
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "proj-pepe",
+          "region": "us-central1"
+        }
+      }
+    ]
+  }
 }
