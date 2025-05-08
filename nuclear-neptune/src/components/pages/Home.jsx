@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../styles/global.css";
+import "../../styles/global.css";
 
 // Import shadcn components
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";

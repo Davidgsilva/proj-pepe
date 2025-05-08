@@ -9,6 +9,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/node": "^9.2.1",
     "@astrojs/react": "^4.2.7",
     "@radix-ui/react-avatar": "^1.1.9",
     "@radix-ui/react-tabs": "^1.1.11",
