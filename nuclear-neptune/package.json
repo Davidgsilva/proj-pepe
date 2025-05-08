@@ -21,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
+    "firebase": "^11.7.1",
     "lucide-react": "^0.508.0",
     "openai": "^4.97.0",
     "puppeteer": "^24.8.1",
