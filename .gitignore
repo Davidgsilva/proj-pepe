@@ -1,0 +1,21 @@
+# next.js
+/.next/
+/out/
+
+# Dependencies
+node_modules/
+
+# SWC
+.swc/
+
+# Environment variables
+*.env
+*.env.local
+
+# Log files
+*.log
+
+# Editor and OS specific files
+.DS_Store
+.vscode/
+.idea/
