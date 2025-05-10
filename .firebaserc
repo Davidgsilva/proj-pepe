@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "proj-pepe"
-  }
+    "default": "proj-pepe",
+    "production": "proj-pepe"
+  },
+  "targets": {},
+  "etags": {}
 }
